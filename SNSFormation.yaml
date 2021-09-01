@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: " Client need a system send notification email every 9am from monday to friday to subscribe customers"
+Parameters:
+  topicName:
+    Type: String
+  displayName:
+    Type: String
+  destinationAcount:
+    Type: String
+    Default: 894811232850
+
+Resources:
+  EventsRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Name: myRule
+      ScheduleExpression :
+        #cron(0/2 * * * ? *)
+        cron(0 9 ? * MON-FRI *)
+
+      State: ENABLED
+      Targets:
+        - Arn: !Sub "arn:aws:lambda:us-east-2:${destinationAcount}:function:myLambda"
+          Id: sendToLambda
+  LambdaFunction:
+    DependsOn: EventsRule
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: myLambda
+      Code:
+        ZipFile: |
+          import boto3
+          def lambda_handler(event, context):
+              message = "My Custom Message"
+              client = boto3.client('sns')
+              response = client.publish(
+                  TopicArn='arn:aws:sns:us-east-2:894811232850:exampletopic',
+                  Message='Hello Friends!! How are you',
+                  Subject='Hello',
+              )
+      Runtime: python3.7
+      Handler: index.lambda_handler
+      Role: "arn:aws:iam::894811232850:role/service-role/role-lambda"
+      TracingConfig:
+        Mode: Active
+  PermissionForEventToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    DependsOn: LambdaFunction
+    Properties:
+      FunctionName: !Ref "LambdaFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: events.amazonaws.com
+      SourceArn: !Sub "arn:aws:events:us-east-2:${destinationAcount}:rule/myRule"
+
+  SNSTopic:
+    Type: AWS::SNS::Topic 
+    Properties:
+      TopicName: !Ref topicName
+      DisplayName: !Ref displayName
+  SNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: caominhnhat99tg@gmail.com
+      Protocol: email
+      TopicArn: !Sub "arn:aws:sns:${AWS::Region}:${destinationAcount}:${topicName}"
+    DependsOn:
+      - SNSTopic
+  EventTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action: 
+              - 'sns:Publish'
+              - 'sns:Subscribe'
+            Resource: '*'
+      Topics:
+        - !Ref SNSTopic  
+
