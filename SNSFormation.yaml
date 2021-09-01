@@ -1,3 +1,4 @@
+
 AWSTemplateFormatVersion: "2010-09-09"
 Description: " Client need a system send notification email every 9am from monday to friday to subscribe customers"
 Parameters:
@@ -79,4 +80,3 @@ Resources:
             Resource: '*'
       Topics:
         - !Ref SNSTopic  
-
