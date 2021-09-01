@@ -23,6 +23,8 @@ jobs:
 #           aws-region: ${{secrets.AWS_REGION}}
       - name: Deploy CloudFormation Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
+        env:
+          AWS_DEFAULT_REGION: 'us-east-2'
         with:
           name: MyStack
           template: SNSFormation.yaml
